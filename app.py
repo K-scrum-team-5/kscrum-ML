@@ -7,9 +7,9 @@ def home():
     return 'This is Home!'
 
 
-@app.route('/mypage')
+@app.route('/build')
 def mypage():
-    return 'This is My Page!'
+    return 'This is Build Page'
 
 
 if __name__ == '__main__':
