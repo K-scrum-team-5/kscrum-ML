@@ -3,3 +3,5 @@ __pycache__/
 
 # 가상 환경 무시
 venv/
+# DB 정보
+config.ini
