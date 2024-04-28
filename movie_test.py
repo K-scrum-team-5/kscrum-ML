@@ -56,4 +56,20 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 tfidf=TfidfVectorizer()
 
 tfidf_matrix= tfidf.fit_transform(movie['genres']).toarray()
-print(tfidf_matrix)
+# print(tfidf_matrix)
+
+# ---------------- 코사인 유사도 계산 ----------------
+from sklearn.metrics.pairwise import cosine_similarity
+
+cos_matrix = cosine_similarity(tfidf_matrix,tfidf_matrix)
+# print(cos_matrix)
+
+# ---------------- 평점 데이터 불러오기 ----------------
+rating= pd.read_csv("./csv/rating.csv")
+
+# ---------------- 평점데이터를 8:2로 train test 데이터로 나우기 ----------------
+
+from sklearn.model_selection import train_test_split
+
+train_rate, test_rate =train_test_split(rating, test_size=0.2, random_state=100)
+print(train_rate.head())
