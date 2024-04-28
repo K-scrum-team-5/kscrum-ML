@@ -93,4 +93,85 @@ sim_rating
 #최종 평점 예측
 pred_rating = pd.DataFrame(np.divide(sim_rating, sim_sum), index=df_cosine.index)
 pred_rating.columns=["pred"]
-print(pred_rating)
+# print(pred_rating)
+
+
+### 어떤 영화 제목을 입력하면 그와 유사도가 높은 10개 영화와 각 예상 평점 나오도록 하는 함수 만들기
+indices = pd.Series(movie.index , index=movie['title'])
+# print(indices)
+
+#영화 제목은 같은데 영화 id는 다를경우 위 함수로는 에러가 남. 영화 id가 다르면 다른 영화로 보고 모두 출력하는 함수 만들기
+
+def similar_movie(title, cos_matrix):
+    try:
+
+        idx = indices[title]                #제목을 입력하면 해당 인덱스 값(몇번째 행인지)을 가져옴
+
+        cos_sim = list(enumerate(cos_matrix[idx]))         #몇번째 행인지와 유사도를 같이 가져옴
+        cos_sim.sort(key=lambda x :x[1], reverse=True)    #유사도 값을 기준으로 내림차순 정렬
+
+        cos_sim = cos_sim[0:11]                           #상위 11개 작품 (다음 코드에서 입력한 작품 제외할 것)
+        sim_movie_idx=[x[0] for x in cos_sim]            #cos_sim에서 첫번쨰 항목만 즉, 몇행인지 값 추출
+        sim_movie_idx.remove(idx)                        #해당 작품 제외
+        sim_movie_idx = sim_movie_idx[0:10]              #상위 10개 작품만
+
+
+        title_list=movie['title'].iloc[sim_movie_idx]  #인덱스로 유사한 영화 제목 추출
+        title_list=pd.DataFrame(title_list)           #데이터프레임 만듦
+
+        id_list=movie['id'].iloc[sim_movie_idx]     #인덱스로 영화 id 추출
+        id_list=pd.DataFrame(id_list)  #데이터 프레임으로 만듦
+
+        temp1 = pd.concat([title_list,id_list], axis=1)   #title_list, id_list 데이터프레임 병합
+        temp2=pd.merge(temp1, pred_rating["pred"],left_on = 'id',right_index=True)    #temp1과 pred_rating 병합
+
+        result=temp2.drop(["id"], axis=1)
+        result.rename(columns={"title":"유사한 영화 TOP10", "pred":"예상평점"},inplace=True)
+
+        print(result)
+
+
+    except:
+        idx=[]
+        if len(indices[title])>1:
+
+            for i in range(len(indices[title])):
+                idx.append(indices[title][i])                          #같은 제목중 코드 하나만
+
+
+                cos_sim = list(enumerate(cos_matrix[idx[i]]))         #몇번째 행인지와 유사도를 같이 가져옴
+                cos_sim.sort(key=lambda x :x[1], reverse=True)    #유사도 값을 기준으로 내림차순 정렬
+
+
+                cos_sim = cos_sim[0:11]                         #상위 11개 작품 (다음 코드에서 입력한 작품 제외할 것)
+                sim_movie_idx=[x[0] for x in cos_sim]            #cos_sim에서 첫번쨰 항목만 즉, 몇행인지 값 추출
+
+
+                if idx[i] in sim_movie_idx:
+                    sim_movie_idx.remove(idx[i])                    #해당 작품 제외
+
+                sim_movie_idx = sim_movie_idx[0:10]              #상위 10개 작품만
+
+
+
+                title_list = movie['title'].iloc[sim_movie_idx]  #인덱스로 유사한 영화 제목 추출
+                title_list=pd.DataFrame(title_list)
+
+
+
+                id_list=movie['id'].iloc[sim_movie_idx]     #인덱스로 영화 id 추출
+                id_list=pd.DataFrame(id_list)
+
+
+                temp1 = pd.concat([title_list,id_list], axis=1)
+
+                temp2=pd.merge(temp1, pred_rating["pred"],left_on = 'id',right_index=True)    #temp1과 pred_rating 병합
+
+
+
+                result=temp2.drop(["id"], axis=1)
+                result.rename(columns={"title":f"영화 id:{idx[i]} 유사한 영화 TOP10", "pred":"예상평점"},inplace=True)
+
+                print(result)
+
+similar_movie("Toy Story",cos_matrix)
