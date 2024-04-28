@@ -64,6 +64,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 cos_matrix = cosine_similarity(tfidf_matrix,tfidf_matrix)
 # print(cos_matrix)
 
+df_cosine= pd.DataFrame(data=cos_matrix, index=movie['id'], columns=movie['id'])
+# df_cosine.head()
+
 # ---------------- 평점 데이터 불러오기 ----------------
 rating= pd.read_csv("./csv/rating.csv")
 
@@ -72,4 +75,22 @@ rating= pd.read_csv("./csv/rating.csv")
 from sklearn.model_selection import train_test_split
 
 train_rate, test_rate =train_test_split(rating, test_size=0.2, random_state=100)
-print(train_rate.head())
+# print(train_rate.head())
+
+#train 데이터에서 유저아이디가 5인 데이터 추출
+user5_train= train_rate[train_rate['userId'] == 5][['id', 'rating']]
+
+### 공식의 분모 유사도 합 구하기 (user5_train의 79개 영화인 j와 전체 영화 i 에 대해)
+sim_sum = df_cosine.loc[user5_train['id'].values, :].sum().values    #유사도 합
+sim_sum = sim_sum + 1                                                #분모가 0인경우 발생할 계산오류를 피하기 위해 +1 해줌
+# print(sim_sum)
+# print(df_cosine.loc[user5_train['id'].values, :].T.values.shape)
+
+#공식의 분자 계산  각각 곱하고 더한 값이 필요하므로 내적 함수사용
+sim_rating = np.matmul(df_cosine.loc[user5_train['id'].values, :].T.values, user5_train['rating'].values)
+sim_rating
+
+#최종 평점 예측
+pred_rating = pd.DataFrame(np.divide(sim_rating, sim_sum), index=df_cosine.index)
+pred_rating.columns=["pred"]
+print(pred_rating)
