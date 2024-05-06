@@ -115,7 +115,7 @@ def get_recommendations(movie_titles):
     
     return pd.DataFrame({'Title': recommended_movies, 'Estimated Rating': estimated_ratings})
 
-input_movie_titles = ['The Matrix', 'Avatar', 'Inception']
-recommended_movies = get_recommendations(input_movie_titles)
-print(recommended_movies)
+# input_movie_titles = ['The Matrix', 'Avatar', 'Inception']
+# recommended_movies = get_recommendations(input_movie_titles)
+# print(recommended_movies)
 
