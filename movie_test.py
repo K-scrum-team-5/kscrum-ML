@@ -105,15 +105,16 @@ def get_recommendations(movie_titles):
                     sim_scores_total[i] += score
 
     sim_scores_total = sorted(list(enumerate(sim_scores_total)), key=lambda x: x[1], reverse=True)
-    sim_scores_total = sim_scores_total[1:11]  # 자기 자신 제외하고 상위 10개 추천
+    sim_scores_total = sim_scores_total[1:21]  # 자기 자신 제외하고 상위 10개 추천
     
     movie_indices = [i[0] for i in sim_scores_total]
-    
+
     # 추천 영화 및 예상 평점 반환
     recommended_movies = movie['title'].iloc[movie_indices]
     estimated_ratings = [average_ratings.get(movie.loc[i, 'id'], np.nan) for i in movie_indices]
-    
+
     return pd.DataFrame({'Title': recommended_movies, 'Estimated Rating': estimated_ratings})
+
 
 # input_movie_titles = ['The Matrix', 'Avatar', 'Inception']
 # recommended_movies = get_recommendations(input_movie_titles)
