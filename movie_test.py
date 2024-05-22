@@ -1,20 +1,19 @@
 import pandas as pd
 import numpy as np
-
 import warnings
+from ast import literal_eval
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.model_selection import train_test_split
+
 warnings.filterwarnings(action='ignore')
 
+# 데이터 로드
 movie = pd.read_csv("./csv/movie.csv")
 rating = pd.read_csv("./csv/rating.csv")
 
-unique_genres = movie['genres'].unique()
-
-# 문자열이 아닌 리스트 형태로 다시 바꿔주는 작업
-from ast import literal_eval
-
+# 장르를 리스트 형태로 변환
 movie["genres"] = movie['genres'].apply(literal_eval)
-
-type(movie['genres'][0])
 
 # 장르값만 남기는 함수
 def get_genres(x):
@@ -30,19 +29,11 @@ movie["genres"] = movie['genres'].apply(get_genres)
 # 문자 공백 없애기
 movie["genres"] = movie["genres"].apply(lambda x: [str(i).replace(" ", "") for i in x])
 
+# 장르를 문자열로 변환
 def get_text(x):
     return ' '.join(x)
 
 movie['genres'] = movie['genres'].apply(get_text)
-
-from sklearn.feature_extraction.text import TfidfVectorizer
-
-tfidf = TfidfVectorizer()
-
-tfidf_matrix = tfidf.fit_transform(movie['genres']).toarray()
-
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.feature_extraction.text import CountVectorizer
 
 # 장르 벡터화
 count_vectorizer = CountVectorizer(stop_words='english')
@@ -51,11 +42,10 @@ count_matrix = count_vectorizer.fit_transform(movie['genres'])
 # 코사인 유사도 계산
 cosine_sim = cosine_similarity(count_matrix, count_matrix)
 
+# 코사인 유사도 DataFrame 생성
 df_cosine = pd.DataFrame(data=cosine_sim, index=movie['id'], columns=movie['id'])
 
 # 평점 데이터를 8:2로 train test 데이터로 나누기
-from sklearn.model_selection import train_test_split
-
 train_rate, test_rate = train_test_split(rating, test_size=0.2, random_state=100)
 
 # train 데이터에서 유저 아이디가 5인 데이터 추출
@@ -72,31 +62,23 @@ sim_rating = np.matmul(df_cosine.loc[user5_train['id'].values, :].T.values, user
 pred_rating = pd.DataFrame(np.divide(sim_rating, sim_sum), index=df_cosine.index)
 pred_rating.columns = ["pred"]
 
-# movie_title을 인덱스로 하는 Series 생성
-indices = pd.Series(movie.index, index=movie['title']).drop_duplicates()
-
 # 각 영화의 평균 평점 계산
 average_ratings = rating.groupby('id')['rating'].mean()
 
-def get_recommendations(movie_titles):
+# 영화 ID를 기반으로 추천 영화를 반환하는 함수
+def get_recommendations(movie_ids):
     sim_scores_total = np.zeros(len(cosine_sim))
     
-    for title in movie_titles:
-        if title in indices:
-            idx = indices[title]
-            # 여러 인덱스 중 첫 번째 인덱스만 사용
-            if isinstance(idx, pd.Series) or isinstance(idx, np.ndarray):
-                idx = idx.iloc[0]
+    for movie_id in movie_ids:
+        if movie_id in df_cosine.index:
+            idx = df_cosine.index.get_loc(movie_id)
             sim_scores = list(enumerate(cosine_sim[idx]))
             
             for i, score in sim_scores:
-                # 유사도 점수에 평균 평점을 곱하여 최종 점수 계산
-                movie_id = movie.loc[i, 'id']  # 현재 영화의 ID
-                if movie_id in average_ratings:
-                    # 평균 평점이 존재할 경우 유사도 점수에 평균 평점을 곱함
-                    sim_scores_total[i] += score * average_ratings[movie_id]
+                current_movie_id = movie.loc[i, 'id']
+                if current_movie_id in average_ratings:
+                    sim_scores_total[i] += score * average_ratings[current_movie_id]
                 else:
-                    # 평균 평점이 없는 경우 유사도 점수만 사용
                     sim_scores_total[i] += score
 
     sim_scores_total = sorted(list(enumerate(sim_scores_total)), key=lambda x: x[1], reverse=True)
@@ -112,6 +94,6 @@ def get_recommendations(movie_titles):
     return pd.DataFrame({'MovieID': movie_ids, 'Title': recommended_movies, 'Estimated Rating': estimated_ratings})
 
 # 테스트 코드 (필요 시 주석 해제)
-# input_movie_titles = ['The Matrix', 'Avatar', 'Inception']
-# recommended_movies = get_recommendations(input_movie_titles)
+# input_movie_ids = [1, 2, 3]
+# recommended_movies = get_recommendations(input_movie_ids)
 # print(recommended_movies)
