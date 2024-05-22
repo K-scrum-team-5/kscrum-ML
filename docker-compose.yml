@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      target: builder
+    volumes:
+      - .:/app
+    ports:
+      - "2222:2222"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: always
+
+  dev:
+    build:
+      context: .
+      target: dev-envs
+    volumes:
+      - .:/app
+    ports:
+      - "2221:2221"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: always
+    command: bash -c "while true; do sleep 1000; done"
+
